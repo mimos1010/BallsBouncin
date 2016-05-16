@@ -7,6 +7,7 @@ float getRand(float min, float max);
 bool checkCollision(PBall A, PBall B);
 void resolveCollision(PBall A, PBall B);
 
+
 int main() {
 	//important template variables
 	int currentradius = 20;
@@ -15,7 +16,7 @@ int main() {
 	std::vector <PBall> balls;
 
 	//define speed for velocity template
-	sf::Vector2f the_speed(.1f, .1f);
+	sf::Vector2f the_speed(-.1,.1);
 	
 	
 #pragma region fontstuff
@@ -69,7 +70,7 @@ int main() {
 	sf::Vector2i pos(350, 40);
 
 	windowSET.setPosition(posSET);
-	window.setPosition(pos);
+	//window.setPosition(pos);
 	int dontsolve = 0;
 
 
@@ -144,6 +145,12 @@ int main() {
 					color.b = getRand(1, 255);
 
 					break;
+				case sf::Keyboard::X:
+
+					window.close();
+					windowSET.close();
+
+					break;
 				}
 			}
 			if (event.type == sf::Event::MouseButtonPressed)
@@ -175,25 +182,35 @@ int main() {
 
 		while (skippedTime > 5) { //Event Handling and Physics
 
-			for (int i = 0; i < balls.size(); i++)
+			for (int i = 0; i < balls.size(); ++i)
 			{
 				balls[i].updatePosition();
 				balls[i].setupCenter();
-				sf::Vector2f vell= balls[i].velocity;
+
 			}
 			
-			for (int i = 0; i < balls.size(); i++)
+			for (int i = 0; i < balls.size(); ++i)
 			{
-				
+				for (int j = i+1; j < balls.size(); ++j)
+				{
+					bool collision = checkCollision(balls[i], balls[j]);
+
+					if (collision)
+					{
+						resolveCollision(balls[i], balls[j]);
+
+						++i;
+					}
+				}
 				balls[i].resolveEdges();
 			}
 
 			skippedTime -= 5;
 		}
 		
-
 		window.clear();
-		for (int i = 0; i < balls.size(); i++)
+
+		for (int i = 0; i < balls.size(); ++i)
 		{
 			window.draw(balls[i]);
 		}
@@ -247,6 +264,47 @@ bool checkCollision(PBall A, PBall B) {
 		}
 	}
 }
+void resolveCollision(PBall A, PBall B) {
+	std::cout << "VelX " << A.getVelocity().x << "\n";
 
+	sf::Vector2f Aspeed = A.getVelocity();
+	sf::Vector2f Bspeed = B.getVelocity();
+
+	if (Aspeed.x / Aspeed.x == -1)
+	{
+		Aspeed.x *= -1;
+	}
+	if (Aspeed.y / Aspeed.y == -1)
+	{
+		Aspeed.y *= -1;
+	}
+	if (Bspeed.x / Bspeed.x == -1)
+	{
+		Bspeed.x *= -1;
+	}
+	if (Bspeed.y / Bspeed.y == -1)
+	{
+		Bspeed.y *= -1;
+	}
+
+	float newVelX1 = (((A.getMass() - B.getMass())  / (A.getMass() + B.getMass()))* Aspeed.x);
+	float newVelY1 = (((A.getMass() - B.getMass())  / (A.getMass() + B.getMass()))* Aspeed.y);
+	float newVelX2 = (((B.getMass() - A.getMass())  / (A.getMass() + B.getMass()))* Bspeed.x);
+	float newVelY2 = (((B.getMass() - A.getMass())  / (A.getMass() + B.getMass()))* Bspeed.y);
+
+	sf::Vector2f newVelA(newVelX1, newVelY1);
+	sf::Vector2f newVelB(newVelX2, newVelY2);
+
+	A.setPosition(A.getPosition().x + newVelX1, A.getPosition().y);
+	A.setPosition(A.getPosition().x, A.getPosition().y + newVelY1);
+	B.setPosition(B.getPosition().x + newVelX2, B.getPosition().y);
+	B.setPosition(B.getPosition().x, B.getPosition().y + newVelY2);
+
+	
+
+	A.setVelocity(newVelA);
+	std::cout << "VelX " << A.getVelocity().x << "\n";
+	B.setVelocity(newVelB);
+}
 
 #pragma endregion All the function definitions
